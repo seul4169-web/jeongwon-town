@@ -1,0 +1,17 @@
+{
+  "name": "정원이의 마을",
+  "short_name": "정원이 마을",
+  "description": "중장비·자동차·공룡·우리 몸을 탐험하며 지식과 연산을 익히는 어린이 마을",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#dff1ff",
+  "theme_color": "#f5a623",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
