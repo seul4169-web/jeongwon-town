@@ -843,7 +843,13 @@ const SFX={ok(){tone(660,0,.15);tone(880,.12,.25)},no(){tone(220,0,.3,"square")}
   beep(){tone(950,0,.12,"square");tone(950,.22,.12,"square")},roar(){tone(110,0,.5,"sawtooth");tone(90,.1,.5,"sawtooth")},beat(){tone(70,0,.15);tone(60,.2,.15)},bell(){tone(784,0,.3);tone(659,.25,.4)},door(){tone(392,0,.15);tone(523,.12,.2)},siren(){[700,900,700,900].forEach((f,i)=>tone(f,i*.22,.2,"triangle"))}};
 function sfx(n){if(S.snd&&SFX[n])SFX[n]();}
 function toggleSnd(){S.snd=!S.snd;save();$("sndB").textContent=S.snd?"🔊":"🔇";}
-function speak(t,lang,rate){try{const s=window.speechSynthesis;if(!s)return;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=lang;u.rate=rate||.8;s.speak(u);}catch(e){}}
+let VOICES=[];function loadVoices(){try{VOICES=window.speechSynthesis?speechSynthesis.getVoices()||[]:[];}catch(e){}}
+loadVoices();try{if(window.speechSynthesis)speechSynthesis.onvoiceschanged=loadVoices;}catch(e){}
+function pickVoice(lang){if(!VOICES.length)loadVoices();const want=lang.toLowerCase(),pre=want.slice(0,2);const norm=v=>(v.lang||"").replace("_","-").toLowerCase();
+ const c=VOICES.filter(v=>norm(v).startsWith(pre));if(!c.length)return null;
+ return c.find(v=>norm(v)===want&&/google|yuna|siri|premium|enhanced|natural|neural|samsung/i.test(v.name))||c.find(v=>norm(v)===want&&v.localService)||c.find(v=>norm(v)===want)||c[0];}
+function speak(t,lang,rate){try{const s=window.speechSynthesis;if(!s)return;s.cancel();if(/[\uAC00-\uD7A3\u3131-\u318E]/.test(t))lang="ko-KR";
+ const u=new SpeechSynthesisUtterance(t);const v=pickVoice(lang);if(v)u.voice=v;u.lang=v?v.lang.replace("_","-"):lang;u.rate=rate||.8;s.speak(u);}catch(e){}}
 const sayEn=t=>speak(t,"en-US",.7),sayKo=t=>speak(t,"ko-KR",.8);
 
 /* ================= 도움 함수 ================= */
@@ -1600,6 +1606,7 @@ document.addEventListener("visibilitychange",save);
 loadPacks();
 // 설치형 앱(홈 화면에 추가)으로 쓸 때만 오프라인 캐시를 켜요
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!/claude\.ai|claudeusercontent/.test(location.host)){try{navigator.serviceWorker.register("sw.js").catch(()=>{});}catch(e){}}
+
 
 </script>
 </body>
