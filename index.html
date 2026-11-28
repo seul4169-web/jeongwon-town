@@ -1001,7 +1001,7 @@ let S={coins:0,own:{},food:{},pet:null,pets:[],av:{hair:0,hc:0,face:1,top:0,tc:0
  seen:{},mstep:1,mprog:0,elv:1,eprog:0,hlv:1,hprog:0,klv:1,kprog:0,dpos:0,dwrong:[],voice:{},day:"",used:0,done:{},td:{math:0,en:0,kr:0,kd:0},logs:{},built:[],museum:[],grid:{exc:0,car:0},moved:{},route:0,snd:true};
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
 function save(){try{const L=S.logs[S.day];if(L){L.used=S.used;L.end={m:S.mstep,e:S.elv,h:S.hlv,k:S.klv};L.td=Object.assign({},S.td);}localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
-function dayCheck(){if(S.day!==today()){S.day=today();S.used=0;S.done={};S.td={math:0,en:0,kr:0,kd:0};S.moved={};S.mseen=[];
+function dayCheck(){if(S.day!==today()){S.day=today();S.used=0;S.done={};S.td={math:0,en:0,kr:0,kd:0};S.moved={};S.mseen=[];S.extra=0;S.guard=0;
   S.logs[S.day]={items:[],start:{m:S.mstep,e:S.elv,h:S.hlv,k:S.klv},coins:0,used:0};
   const ks=Object.keys(S.logs).sort();while(ks.length>14)delete S.logs[ks.shift()];save();}}
 dayCheck();
@@ -1048,7 +1048,9 @@ const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a};
 const pickOne=a=>a[Math.floor(Math.random()*a.length)];
 function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),2800);}
-function drawTop(){$("coinP").textContent="🪙 "+S.coins;const left=Math.max(0,DAILY-S.used);$("timeP").textContent="⏱ "+Math.floor(left/60)+":"+String(left%60).padStart(2,"0");drawPlan();}
+const LIMIT=()=>DAILY+(S.extra||0);
+const timeUp=()=>!S.guard&&S.used>=LIMIT();
+function drawTop(){$("coinP").textContent="🪙 "+S.coins;const left=Math.max(0,LIMIT()-S.used);$("timeP").textContent=S.guard?"🔐 보호자 모드":"⏱ "+Math.floor(left/60)+":"+String(left%60).padStart(2,"0");drawPlan();}
 const hasB=n=>[0,1,3,6,7,8].includes(n%10);
 const jo=(n,c,v)=>n+(hasB(n)?c:v);
 const ro=n=>n+([0,3,6].includes(n%10)?"으로":"로");
@@ -1060,10 +1062,11 @@ function pickNew(key,bank,n,kf){kf=kf||(x=>typeof x==="string"?x:(x[0]||x.n||x.t
 
 /* ================= 하루 30분 ================= */
 let warned=false;
-setInterval(()=>{dayCheck();if(document.hidden)return;if(S.used>=DAILY){$("stop").classList.add("on");return;}
+setInterval(()=>{dayCheck();if(document.hidden)return;if(S.guard){drawTop();return;}   // 보호자 모드: 시간을 세지 않아요
+  if(timeUp()){$("stop").classList.add("on");return;}
   S.used++;if(S.used%10===0)save();drawTop();
-  if(!warned&&DAILY-S.used===300){warned=true;toast("5분 남았어! 하던 놀이를 마무리해 볼까?");}
-  if(S.used>=DAILY){save();$("stop").classList.add("on");}},1000);
+  if(!warned&&LIMIT()-S.used===300){warned=true;toast("5분 남았어! 하던 놀이를 마무리해 볼까?");}
+  if(timeUp()){save();$("stop").classList.add("on");}},1000);
 
 /* ================= 연산 단계 ================= */
 const STEPS=[null,
@@ -1197,7 +1200,7 @@ function sign(cx,y,t,c,lock){const w=t.length*22+34+(lock?30:0);return `<g><rect
 // 엄마 확인용: true면 오늘의 일정과 상관없이 모든 건물이 열려요 (다시 잠그려면 false)
 const OPEN_ALL=false;
 const koDone=()=>!!(S.td.kr&&S.td.kd);
-const unlocked=()=>OPEN_ALL||(S.td.math&&S.td.en&&koDone());
+const unlocked=()=>OPEN_ALL||!!S.guard||(S.td.math&&S.td.en&&koDone());
 function drawMap(){const L=!unlocked();
  let s=`<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe4ff"/><stop offset="1" stop-color="#e8f6ff"/></linearGradient></defs>
  <rect width="${MAPW}" height="${MAPH}" fill="url(#sky)"/>
@@ -1259,7 +1262,7 @@ function goMap(){stopRace();stopTimers();$("v").className="";$("map").style.disp
 function setTheme(t){$("v").className="on th-"+t;}
 function show(html){$("map").style.display="none";$("plan").style.display="none";$("v").classList.add("on");$("vin").innerHTML=html;window.scrollTo(0,0);}
 function drawPlan(){const p=$("plan");if(!p)return;const m=S.td.math,e=S.td.en,k=koDone(),all=unlocked();
- p.innerHTML=`<b class="j">📋 오늘의 일정</b><span class="${m?"ok":""}">① 🔢 연산 ${m?"✅":"⬜"}</span><span class="${e?"ok":""}">② 🔤 영어 ${e?"✅":"⬜"}</span><span class="${k?"ok":""}">③ 📗 국어 ${k?"✅":S.td.kr?"✍️":"⬜"}</span><span class="${all?"ok":""}">④ 🎮 자유 놀이 ${all?"🔓":"🔒"}</span>${OPEN_ALL?'<span class="ok">· 지금은 확인용으로 모두 열림</span>':""}`;}
+ p.innerHTML=`<b class="j">📋 오늘의 일정</b><span class="${m?"ok":""}">① 🔢 연산 ${m?"✅":"⬜"}</span><span class="${e?"ok":""}">② 🔤 영어 ${e?"✅":"⬜"}</span><span class="${k?"ok":""}">③ 📗 국어 ${k?"✅":S.td.kr?"✍️":"⬜"}</span><span class="${all?"ok":""}">④ 🎮 자유 놀이 ${all?"🔓":"🔒"}</span>${OPEN_ALL||S.guard?'<span class="ok">· 🔐 보호자 모드: 시간 제한 없음, 모두 열림</span>':""}`;}
 
 /* ================= 건물 안 ================= */
 const BLD={
@@ -1791,7 +1794,7 @@ function openReport(day){stopRace();stopTimers();$("stop").classList.remove("on"
  $("v").className="on th-report";$("map").style.display="none";$("plan").style.display="none";
  $("vin").innerHTML=`<div class="btitle"><span style="font-size:50px">📋</span><div class="bt"><h2 class="j">엄마 보고서</h2><p>김정원 어린이의 하루 기록</p></div><button class="back" onclick="${$("stop").dataset.lock?"closeReport()":"goMap()"}">닫기</button></div>
  <div class="dtabs">${days.map(d=>`<button class="${d===day?"on":""}" onclick="openReport('${d}')">${d.slice(5).replace("-","/")}${d===S.day?" (오늘)":""}</button>`).join("")}</div>
- <div class="rcards"><div><b>${Math.round(used/60)}분</b><span>사용 시간 (하루 30분)</span></div><div><b>${ok} / ${it.length}</b><span>맞힌 문제 / 푼 문제</span></div><div><b>${wr.length}</b><span>틀린 문제</span></div><div><b>🪙 ${L.coins||0}</b><span>모은 코인</span></div></div>
+ <div class="rcards"><div><b>${Math.round(used/60)}분</b><span>사용 시간 (하루 ${Math.round(LIMIT()/60)}분)</span></div><div><b>${ok} / ${it.length}</b><span>맞힌 문제 / 푼 문제</span></div><div><b>${wr.length}</b><span>틀린 문제</span></div><div><b>🪙 ${L.coins||0}</b><span>모은 코인</span></div></div>
  <div class="rbox"><h3 class="j">📋 오늘의 일정</h3><p>① 연산 6문제 ${td.math?"✅ 완료":"⬜ 안 함"} · ② 영어 6문제 ${td.en?"✅ 완료":"⬜ 안 함"} · ③ 국어 읽기 6문제 ${td.kr?"✅":"⬜"} + 받아쓰기 5개 ${td.kd?"✅":"⬜"} · ④ 자유 놀이 ${td.math&&td.en&&td.kr&&td.kd?"🔓 열림":"🔒"}</p>
  <h3 class="j">📈 단계</h3><p>🔢 연산: ${lv(L.start&&L.start.m,end.m,v=>v+"단계 ("+STEPS[v].n+")")}<br>🔤 영어: ${lv(L.start&&L.start.e,end.e,v=>EN_LV[v].n)}<br>📗 국어: ${lv(L.start&&L.start.k,end.k||1,v=>KO_LV[v].n)}<br>가 겹받침: ${lv(L.start&&L.start.h,end.h,v=>HG_LV[v].n)}</p></div>
  ${dictReport(L)}
@@ -1799,10 +1802,11 @@ function openReport(day){stopRace();stopTimers();$("stop").classList.remove("on"
  <div class="rbox"><h3 class="j">❌ 틀린 문제 (${wr.length})</h3>${wr.length?`<table class="rt"><tr><th>활동</th><th>문제</th><th>정원이 답</th><th>정답</th></tr>${wr.map(x=>`<tr><td>${x.c}${x.rv?" <small>(다시 풀기)</small>":""}</td><td>${x.q}</td><td class="bad">${x.g||"-"}</td><td class="good">${x.a||"-"}</td></tr>`).join("")}</table>`:"<p>틀린 문제가 없어요! 👏</p>"}</div>
  <div class="rbox"><h3 class="j">🛠️ 어른용: 단계 조정</h3><p class="tip">문제가 너무 쉽거나 어려우면 여기서 단계를 바꿔 주세요.</p>
  ${[["mstep","🔢 연산",MAXSTEP,v=>v+"단계 "+STEPS[v].n],["elv","🔤 영어",EN_LV.length-1,v=>EN_LV[v].n],["klv","📗 국어",KO_LV.length-1,v=>KO_LV[v].n],["hlv","가 겹받침",HG_LV.length-1,v=>HG_LV[v].n]].map(([k,n,mx,f])=>`<div class="adj"><span>${n}: <b>${f(S[k])}</b></span><button class="sbtn" onclick="adj('${k}',-1,${mx})">◀ 낮추기</button><button class="sbtn" onclick="adj('${k}',1,${mx})">높이기 ▶</button></div>`).join("")}</div>
+ ${guardBox()}
  ${voiceBox()}`;
  window.scrollTo(0,0);}
 function adj(k,d,mx){S[k]=Math.max(1,Math.min(mx,S[k]+d));S[{mstep:"mprog",elv:"eprog",hlv:"hprog",klv:"kprog"}[k]]=0;save();drawTop();openReport();}
-function closeReport(){$("stop").classList.add("on");goMap();}
+function closeReport(){delete $("stop").dataset.lock;if(timeUp())$("stop").classList.add("on");goMap();}
 function reportFromStop(){$("stop").dataset.lock="1";$("stop").classList.remove("on");openReport();}
 
 /* ================= 매주 새 문제 (packs.json) ================= */
@@ -1820,7 +1824,7 @@ function loadPacks(){try{fetch("packs.json",{cache:"no-cache"}).then(r=>r.ok?r.j
 /* ================= 시작 ================= */
 $("sndB").textContent=S.snd?"🔊":"🔇";
 drawMap();drawTop();
-if(S.used>=DAILY)$("stop").classList.add("on");
+if(timeUp())$("stop").classList.add("on");
 document.addEventListener("visibilitychange",save);
 loadPacks();
 // 설치형 앱(홈 화면에 추가)으로 쓸 때만 오프라인 캐시를 켜요
@@ -1930,6 +1934,24 @@ function eatFood(id){if(!(S.food[id]>0))return;const f=SHOP.food.find(x=>x[0]===
  </svg>
  <div class="row"><button class="sbtn go" onclick="openFridge()">🧊 냉장고로</button><button class="sbtn" onclick="openHome()">🏠 거실로</button></div>`);
  setTimeout(()=>{sfx("ok");sayKo("냠냠! "+line);},900);}
+
+/* ================= 🔐 보호자 모드 ================= */
+function guardBox(){const left=Math.max(0,LIMIT()-S.used);
+ return `<div class="rbox gbox"><h3 class="j">🔐 보호자 모드 (어른용)</h3>
+ <p>지금: ${S.guard?'<b style="color:#2e7d32">켜짐</b> — 시간 제한 없음, 모든 건물 열림 (오늘만)':`<b>꺼짐</b> — 오늘 남은 시간 ${Math.floor(left/60)}분 (하루 ${Math.round(LIMIT()/60)}분)`}</p>
+ <div class="row" style="justify-content:flex-start">
+ ${S.guard?`<button class="sbtn go" onclick="guardOff()">🔒 보호자 모드 끄기</button>`:`<button class="sbtn go" onclick="guardAsk('on')">🔓 보호자 모드 켜기</button>`}
+ <button class="sbtn" onclick="guardAsk('t10')">⏱ 오늘 10분 더 주기</button><button class="sbtn" onclick="guardAsk('t30')">⏱ 오늘 30분 더 주기</button></div>
+ <p class="tip">보호자 모드는 엄마가 앱을 확인할 때 쓰세요. 켜 있는 동안은 정원이의 하루 30분이 줄지 않고, 공부를 안 해도 모든 건물이 열려요. 내일이 되면 저절로 꺼져요. 켜거나 시간을 더 줄 때는 어른 확인 문제(곱셈)가 나와요.</p>
+ <div id="gq"></div></div>`;}
+let GQ=null;
+function guardAsk(act){const a=6+Math.floor(Math.random()*4),b=12+Math.floor(Math.random()*8),c=10+Math.floor(Math.random()*30);GQ={act,ans:a*b+c};
+ $("gq").innerHTML=`<div class="gqb"><b>어른 확인:</b> ${a} × ${b} + ${c} = <input id="gqi" type="number" inputmode="numeric" style="width:110px;font-size:22px;padding:4px 8px;border-radius:10px;border:2px solid #ccc"> <button class="sbtn go" onclick="guardDo()">확인</button></div>`;setTimeout(()=>{const i=$("gqi");if(i)i.focus();},50);}
+function guardDo(){const v=+($("gqi")||{}).value;if(!GQ||v!==GQ.ans){toast("답이 달라요. 어른이 풀어 주세요!");sfx("no");return;}
+ if(GQ.act==="on"){S.guard=1;toast("🔐 보호자 모드를 켰어요. 오늘은 시간 제한 없이 모두 열려요.");}
+ else{const m=GQ.act==="t10"?10:30;S.extra=(S.extra||0)+m*60;toast(`⏱ 오늘 ${m}분을 더 줬어요!`);}
+ GQ=null;save();drawTop();$("stop").classList.remove("on");sfx("ok");openReport();}
+function guardOff(){S.guard=0;save();drawTop();toast("🔒 보호자 모드를 껐어요.");openReport();}
 
 
 </script>
