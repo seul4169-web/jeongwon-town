@@ -1894,12 +1894,19 @@ function dictReport(L){const ds=L.dict||[];if(!ds.length)return `<div class="rbo
  <div class="dlist">${ds.map(x=>`<div class="ditem ${x.ok?"good":"bad"}">${x.img?`<img src="${x.img}" alt="">`:'<div class="noimg">(그림 없음)</div>'}<b>${x.ok?"⭕":"❌"} ${x.w}</b>${x.rv?"<small>다시 쓰기</small>":""}</div>`).join("")}</div></div>`;}
 
 /* ================= 🔊 목소리 설정 (어른용) ================= */
-function voiceBox(){loadVoices();const row=(pre,label)=>{const vs=voicesFor(pre);const cur=pickVoice(pre==="ko"?"ko-KR":"en-US");
-  return `<div class="adj"><span>${label}: <b>${cur?cur.name:"없음 ⚠️"}</b></span>${vs.length>1?`<select onchange="setVoice('${pre}',this.value)"><option value="">자동으로 고르기</option>${vs.map(v=>`<option value="${v.name.replace(/"/g,"&quot;")}" ${S.voice&&S.voice[pre]===v.name?"selected":""}>${v.name} (${v.lang})</option>`).join("")}</select>`:""}<button class="sbtn" onclick="${pre==="ko"?"sayKo('닭이 꼬끼오 울어요. 괜찮아, 다시 해 보자!')":"sayEn('apple')"}">▶ 들어 보기</button></div>`;};
+function voiceBox(){loadVoices();const ua=navigator.userAgent;const br=/SamsungBrowser/i.test(ua)?"삼성 인터넷":/Chrome/i.test(ua)?"Chrome":/Safari/i.test(ua)?"Safari":"기타";
+ const row=(pre,label)=>{const vs=voicesFor(pre);const cur=pickVoice(pre==="ko"?"ko-KR":"en-US");
+  return `<div class="adj"><span>${label}: <b>${cur?cur.name+" ("+cur.lang+")":"없음 ⚠️"}</b></span>${vs.length>1?`<select onchange="setVoice('${pre}',this.value)"><option value="">자동으로 고르기</option>${vs.map(v=>`<option value="${v.name.replace(/"/g,"&quot;")}" ${S.voice&&S.voice[pre]===v.name?"selected":""}>${v.name} (${v.lang})</option>`).join("")}</select>`:""}<button class="sbtn" onclick="${pre==="ko"?"sayKo('닭이 꼬끼오 울어요. 괜찮아, 다시 해 보자!')":"sayEn('apple')"}">▶ 들어 보기</button></div>`;};
  const noKo=!voicesFor("ko").length;
- return `<div class="rbox"><h3 class="j">🔊 어른용: 목소리 설정</h3><p class="tip">한글이 영어 발음처럼 들리거나 영어 끝소리가 뭉개지면 여기서 다른 목소리를 골라 들어 보세요.</p>
+ return `<div class="rbox"><h3 class="j">🔊 어른용: 목소리 설정</h3><p class="tip">한글이 영어 발음처럼 들리면 아래 '한국어' 칸에서 다른 목소리를 골라 ▶ 들어 보세요.</p>
  ${row("ko","한국어")}${row("en","영어")}
- ${noKo?`<p class="tip" style="color:#c0392b">이 기기에 한국어 목소리가 없어요. 아이패드: 설정 → 손쉬운 사용 → 읽기 및 말하기 → 음성 → 한국어에서 받아 주세요. 갤럭시: 설정 → 일반 → 텍스트 음성 변환에서 한국어 음성을 받아 주세요.</p>`:""}</div>`;}
+ <p class="tip">브라우저: ${br} · 찾은 목소리 ${VOICES.length}개 (한국어 ${voicesFor("ko").length}개)</p>
+ ${noKo?`<p class="tip" style="color:#c0392b">이 브라우저에서 한국어 목소리를 찾지 못했어요. 그래서 영어 목소리가 한글을 읽어요.</p>`:""}
+ <details><summary>갤럭시 탭에서 한글이 영어처럼 들릴 때</summary><ol class="tip">
+ <li>설정 → 일반 → <b>텍스트 음성 변환</b> → 기본 엔진을 <b>Google 음성 인식 및 합성</b>으로 고르고, 언어를 <b>한국어</b>로 바꿔 주세요.</li>
+ <li>엔진 옆 ⚙️ → 음성 데이터 설치 → <b>한국어</b>를 받아 주세요.</li>
+ <li>삼성 인터넷이 아니라 <b>Chrome</b>에서 이 주소를 열고, Chrome 메뉴 → '홈 화면에 추가'로 다시 설치해 주세요.</li>
+ <li>앱을 완전히 껐다 켠 뒤 여기서 ▶ 들어 보기를 눌러 확인해요.</li></ol></details></div>`;}
 function setVoice(pre,name){S.voice=S.voice||{};if(name)S.voice[pre]=name;else delete S.voice[pre];save();pre==="ko"?sayKo("이 목소리로 읽어 줄게요."):sayEn("hello");}
 
 /* ================= 🧊 냉장고와 먹기 ================= */
