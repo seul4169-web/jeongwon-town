@@ -319,8 +319,13 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none}
 .dtop{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin:6px 0}
 .dtop small{display:block;text-align:center;color:#6c7a86;font-size:16px}
 .dbox{display:flex;gap:6px}.dbox i{width:44px;height:44px;border:3px solid #9cc6ea;border-radius:8px;background:#fff}.dbox i.sp{width:16px;border:none;background:none}
-.pad{background:#fff;border-radius:18px;padding:8px;box-shadow:0 4px 0 #d6e2ea;margin:8px 0}
-.pad canvas{width:100%;height:auto;display:block;touch-action:none;border-radius:12px;cursor:crosshair}
+.pad{position:relative;margin:10px 0 18px;padding:16px 16px 26px;border-radius:16px;
+ background:repeating-linear-gradient(90deg,#8b5a2b 0 14px,#946231 14px 22px,#7f5226 22px 40px),#8b5a2b;
+ box-shadow:inset 0 0 0 3px #6b4220,inset 0 -6px 0 #6b4220,0 6px 0 #5a371b,0 10px 18px #0003}
+.pad canvas{width:100%;height:auto;display:block;touch-action:none;border-radius:6px;cursor:crosshair;box-shadow:inset 0 0 18px #0006,0 0 0 4px #5a371b}
+.pad .tray{position:absolute;left:12%;right:12%;bottom:6px;height:14px;background:#6b4220;border-radius:4px;display:flex;align-items:center;gap:14px;padding:0 16px}
+.pad .chalk{width:46px;height:9px;background:#f7f7ef;border-radius:3px}.pad .chalk.y{background:#ffe680;width:34px}
+.pad .eraser{width:52px;height:12px;background:linear-gradient(#3b4a5a 0 45%,#d8cfb8 45%);border-radius:3px;margin-left:auto}
 .dans{text-align:center}.dreal{font-family:'Jua',sans-serif;font-size:60px;color:#2e7d32;letter-spacing:6px}.dsnd{font-size:20px;color:#6c7a86}
 .dtip{display:inline-block;background:#fff8e1;border-radius:14px;padding:8px 14px;font-size:21px;margin:6px 0}
 .dlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
@@ -1844,25 +1849,27 @@ function dictToday(){const L=LOG();if(L.dw&&L.dw.length)return L.dw;
  const w=(S.dwrong||[]).slice(0,2).filter(x=>DICT.some(d=>d[0]===x)).map(x=>DICT.find(d=>d[0]===x));
  while(w.length<5){const d=DICT[S.dpos%DICT.length];S.dpos++;if(!w.includes(d))w.push(d);}
  L.dw=w;save();return w;}
-function startDict(){CUR="school";setTheme("school");const ws=dictToday();
+function startDict(){CUR="school";show("");setTheme("school");const ws=dictToday();
  runSet("dict","받아쓰기",ws.map(d=>({d})),null,{render:renderDict,onEnd:dictEnd,title2:"받아쓰기"});}
 function dictBoxes(w){return [...w].map(c=>c===" "?'<i class="sp"></i>':"<i></i>").join("");}
 function renderDict(){const d=Q.items[Q.i].d;Q.dc={d,step:0};
  $("vin").innerHTML=frame(`<div class="story">✍️ 잘 듣고 공책에 써 봐요! <span style="color:#6c7a86">(손가락으로 쓰기)</span></div>
  <div class="dtop"><span class="emo" style="font-size:56px">${d[3]}</span><button class="spk" onclick="dictSay()">🔊</button><div><div class="dbox">${dictBoxes(d[0])}</div><small>${[...d[0]].filter(c=>c!==" ").length}글자${d[0].includes(" ")?" · 띄어 쓰는 곳이 있어요":""}</small></div></div>
  <div class="dans" id="dans"></div>
- <div class="pad"><canvas id="cv" width="900" height="260"></canvas></div>
+ <div class="pad"><canvas id="cv" width="900" height="260"></canvas><div class="tray"><span class="chalk"></span><span class="chalk y"></span><span class="eraser"></span></div></div>
  <div class="row" id="drow"><button class="sbtn" onclick="cvClear()">🧽 지우기</button><button class="sbtn" onclick="dictSay()">🔊 다시 듣기</button><button class="sbtn go big2" onclick="dictCheck()">✅ 다 썼어요</button></div>${NEXT}`);
  cvInit();setTimeout(dictSay,300);}
 function dictSay(){const d=Q.dc&&Q.dc.d;if(d)sayKo(d[0]);}
 let CV=null;
 function cvInit(){const c=$("cv");if(!c)return;const x=c.getContext("2d");CV={c,x,draw:false,ink:false};
- const lines=()=>{x.fillStyle="#fffdf5";x.fillRect(0,0,c.width,c.height);x.strokeStyle="#cfe3f5";x.lineWidth=2;
-  for(let i=1;i<6;i++){x.beginPath();x.moveTo(i*150,10);x.lineTo(i*150,250);x.stroke();}x.strokeStyle="#9cc6ea";x.beginPath();x.moveTo(0,130);x.lineTo(900,130);x.stroke();};
+ const lines=()=>{x.fillStyle="#2f5d3f";x.fillRect(0,0,c.width,c.height);
+  for(let i=0;i<260;i++){x.fillStyle="rgba(255,255,255,"+(Math.random()*.035)+")";x.fillRect(Math.random()*900,Math.random()*260,Math.random()*60+10,Math.random()*3+1);}
+  x.strokeStyle="rgba(255,255,255,.16)";x.lineWidth=2;x.setLineDash([10,10]);
+  for(let i=1;i<6;i++){x.beginPath();x.moveTo(i*150,14);x.lineTo(i*150,246);x.stroke();}x.beginPath();x.moveTo(0,130);x.lineTo(900,130);x.stroke();x.setLineDash([]);};
  CV.lines=lines;lines();
  const pos=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height];};
  c.onpointerdown=e=>{if(Q.dc&&Q.dc.step)return;CV.draw=true;CV.ink=true;c.setPointerCapture(e.pointerId);const[a,b]=pos(e);x.beginPath();x.moveTo(a,b);x.lineTo(a+.1,b+.1);
-  x.strokeStyle="#2f3a45";x.lineWidth=9;x.lineCap="round";x.lineJoin="round";x.stroke();e.preventDefault();};
+  x.strokeStyle="#fbfbf2";x.shadowColor="rgba(255,255,255,.35)";x.shadowBlur=2;x.lineWidth=10;x.lineCap="round";x.lineJoin="round";x.stroke();e.preventDefault();};
  c.onpointermove=e=>{if(!CV.draw)return;const[a,b]=pos(e);x.lineTo(a,b);x.stroke();e.preventDefault();};
  c.onpointerup=c.onpointercancel=()=>{CV.draw=false;};}
 function cvClear(){if(CV&&!(Q.dc&&Q.dc.step)){CV.lines();CV.ink=false;sfx("tap");}}
